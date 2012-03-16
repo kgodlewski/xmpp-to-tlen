@@ -81,6 +81,9 @@ def incoming_roster(iq, query):
 		name = item.get('name')
 		if name:
 			name = item.set('name', tlen_decode(name))
+		group = item.find('{jabber:iq:roster}group')
+		if group is not None and group.text:
+			group.text = tlen_decode(group.text)
 	return iq
 
 """

@@ -9,9 +9,7 @@ from pyxmpp2 import constants
 
 import adapt
 
-# logging.basicConfig()
 logger = logging.getLogger('xmpp_to_tlen.tlen.stream')
-logger.setLevel(logging.DEBUG)
 
 class TlenError(Exception):
 	pass
@@ -102,6 +100,9 @@ class TlenStream(XMLStreamHandler):
 		# XXX: Race condition? Dunno how gevent handles this internally
 		while True:
 			gevent.sleep(30)
+
+			if self._closed:
+				break
 			try:
 				self._transport.send(' ')
 			except Exception as e:
@@ -185,7 +186,7 @@ class TlenStream(XMLStreamHandler):
 		if element.tag in ('avatar', ):
 			return
 
-		logger.debug('uplink %s', element)
+		# logger.debug('uplink %s', element)
 		element = adapt.incoming_element(element)
 		element = self._add_namespaces(element)
 		self.uplink.send(stanza_factory(element))
