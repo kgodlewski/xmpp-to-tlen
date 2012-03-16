@@ -30,6 +30,8 @@ from const import DISCO_INFO_NS_QNP, CHATSTATES_NS
 
 class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 	"""
+	The XMPP end of the proxy.
+
 	Handles local XMPP client connections. Forwards stanzas from the 
 	client to the Tlen server, and the other way around. Stanzas are 
 	adapted to achieve maximum satisfaction on both sides ;)
@@ -75,10 +77,27 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 	@iq_get_stanza_handler(XMLPayload, '{jabber:iq:auth}query')
 	def handle_auth_get(self, stanza):
 		logger.debug('auth get %s', stanza.serialize())
-		return stanza.make_result_response()
+		resp = stanza.make_result_response()
+
+		query = ElementTree.Element('{jabber:iq:auth}query')
+		for x in ('username', 'password', 'resource'):
+			query.append(ElementTree.Element('{jabber:iq:auth}' + x))
+
+		resp.add_payload(query)
+
+		return resp
 		
 	@iq_set_stanza_handler(XMLPayload, '{jabber:iq:auth}query')
 	def handle_auth_set(self, stanza):
+		"""
+		This is the part that actually starts the Tlen end
+		of the proxy.
+
+		We're expecting PLAIN XMPP authentication here, so we
+		can grab the auth data and log in to Tlen.pl, on behalf
+		of the user.
+		"""
+
 		logger.debug('auth set %s', stanza.serialize())
 
 		query = stanza.get_payload(None, 'query').as_xml()
