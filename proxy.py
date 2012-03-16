@@ -1,4 +1,5 @@
 import logging, gevent
+from xml.etree import ElementTree
 
 from pyxmpp2.mainloop.interfaces import EventHandler, event_handler, QUIT
 from pyxmpp2.session import SessionHandler
@@ -24,6 +25,8 @@ from pyxmpp2.settings import XMPPSettings
 from tlen.stream import TlenStream
 
 logger = logging.getLogger('tlen.server')
+
+from const import DISCO_INFO_NS_QNP, CHATSTATES_NS
 
 class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 	"""
@@ -109,6 +112,26 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 	@iq_set_stanza_handler(XMLPayload, '{jabber:iq:roster}query')
 	def handle_roster_set(self, stanza):
 		self.tlen.send(stanza)
+
+	@iq_get_stanza_handler(XMLPayload, DISCO_INFO_NS_QNP + 'query')
+	def handle_disco_get(self, stanza):
+		"""
+		Handle feature discovery on behalf of a @tlen.pl user.
+		"""
+
+		logger.debug('DISCO INFO get, jid=%s', stanza.to_jid)
+
+		resp = stanza.make_result_response()
+
+		# Target is client entity
+		if stanza.to_jid.domain:
+			logger.debug('disco to client')
+			query = ElementTree.Element(DISCO_INFO_NS_QNP + 'query')
+			query.append(ElementTree.Element(DISCO_INFO_NS_QNP + 'feature', var=CHATSTATES_NS))
+
+			resp.add_payload(query)
+
+		return resp
 
 	@presence_stanza_handler()
 	def handle_presence(self, stanza):

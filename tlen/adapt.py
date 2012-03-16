@@ -1,9 +1,12 @@
 import urllib, functools, logging
+from xml.etree import ElementTree
 
 from pyxmpp2.stanza import Stanza
 from pyxmpp2.message import Message
 from pyxmpp2.presence import Presence
 from pyxmpp2.jid import JID
+
+import const
 
 logger = logging.getLogger('tlen')
 
@@ -24,11 +27,47 @@ def incoming_element(element):
 	Adapt an incoming XML element. Return the element.
 	"""
 
-	if element.tag.endswith('iq'):
+	logger.debug('element tag=%s', element.tag)
+
+	if element.tag == 'message':
+		return incoming_message(element)
+	elif element.tag == 'm':
+		return incoming_chatstate(element)
+	elif element.tag == 'iq':
 		return incoming_iq_element(element)
 
 	tlen_decode_element(element)
 	return element
+
+def incoming_chatstate(element):
+	"""
+	Transform an <m /> tag to a proper XMPP chat notification.
+
+	`element` is one of:
+		<m tp='t' f='from-jid' /> -- equivalent to <composing />
+		<m tp='u' f='from-jid' /> -- equivalent to <paused /> XXX: really?
+	"""
+
+	logger.debug('chatstate')
+
+	msg = ElementTree.Element('message')
+	msg.set('from', element.get('f'))
+
+	if element.get('tp') == 't':
+		child = 'composing'
+	else:
+		child = 'paused'
+
+	child = ElementTree.Element(const.CHATSTATES_NS_QNP + child)
+	msg.append(child)
+
+	return msg
+
+def incoming_message(message):
+	tlen_decode_element(message)
+	active = ElementTree.Element(const.CHATSTATES_NS_QNP + 'active')
+	message.append(active)
+	return message
 
 def incoming_iq_element(iq):
 	query = iq.find('{jabber:iq:roster}query')
