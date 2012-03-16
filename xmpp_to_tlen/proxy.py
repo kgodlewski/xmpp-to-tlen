@@ -24,7 +24,7 @@ from pyxmpp2.settings import XMPPSettings
 
 from tlen.stream import TlenStream
 
-logger = logging.getLogger('tlen.server')
+logger = logging.getLogger('xmpp_to_tlen.proxy')
 
 from const import DISCO_INFO_NS_QNP, CHATSTATES_NS
 

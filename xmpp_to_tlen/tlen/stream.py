@@ -10,7 +10,7 @@ from pyxmpp2 import constants
 import adapt
 
 # logging.basicConfig()
-logger = logging.getLogger('tlen')
+logger = logging.getLogger('xmpp_to_tlen.tlen.stream')
 logger.setLevel(logging.DEBUG)
 
 class TlenError(Exception):

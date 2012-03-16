@@ -1,25 +1,13 @@
-#!/usr/bin/env python
-import gevent.monkey
-gevent.monkey.patch_all()
-
-import socket, logging, urllib
-
-level = logging.DEBUG
-level = None
-logging.basicConfig(level=level)
-#logging.getLogger('pyxmpp2.IN').setLevel(logging.DEBUG)
-#logging.getLogger('pyxmpp2.OUT').setLevel(logging.DEBUG)
-
-logger = logging.getLogger('tlen')
-logger.setLevel(logging.DEBUG)
+import logging, gevent
+from gevent.server import StreamServer
 
 from pyxmpp2.settings import XMPPSettings
 from pyxmpp2.transport import TCPTransport
 from pyxmpp2.mainloop.select import SelectMainLoop
 
-from gevent.server import StreamServer
-
 import proxy
+
+logger = logging.getLogger('xmpp_to_tlen.listener')
 
 class Listener(object):
 	"""
@@ -51,12 +39,8 @@ class Listener(object):
 		try:
 			loop.loop()
 		except Exception as e:
-			logger.error('%s', e)
+			logger.error('Error: %s', e)
 			if serv.tlen:
 				serv.tlen.close()
 			serv.transport.close()
-
-if __name__ == '__main__':
-	listener = Listener()
-	listener.serve()
-
+			raise

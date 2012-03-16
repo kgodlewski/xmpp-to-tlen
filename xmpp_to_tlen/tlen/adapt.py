@@ -6,9 +6,9 @@ from pyxmpp2.message import Message
 from pyxmpp2.presence import Presence
 from pyxmpp2.jid import JID
 
-import const
+from xmpp_to_tlen import const
 
-logger = logging.getLogger('tlen')
+logger = logging.getLogger('xmpp_to_tlen.tlen.adapt')
 
 def tlen_decode(text):
 	text = urllib.unquote(text.replace('+', ' '))
@@ -126,29 +126,32 @@ def outgoing_message(stanza):
 				from_jid = stanza.from_jid, to_jid = stanza.to_jid,
 				subject = stanza.subject, body = body,
 				thread = stanza.thread)
+		return stanza
+
+	# If the message had no body, assume it's a typing notification.
+
+	xml = stanza.as_xml()
+
+	for chatstate in xml:
+		if chatstate.tag.startswith(const.CHATSTATES_NS_QNP):
+			break
+	# If no chatstate found, give up and send unmodified stanza
 	else:
-		xml = stanza.as_xml()
-		for chatstate in xml:
-			if chatstate.tag.startswith(const.CHATSTATES_NS_QNP):
-				break
-		# If no chatstate found, give up and send unmodified stanza
-		else:
-			return stanza
+		return stanza
 
-		logger.debug('chatstate=%s', chatstate)
+	logger.debug('chatstate=%s', chatstate)
 
-		# Need to add a namespace to keep Stanza happy
-		m = ElementTree.Element('{jabber:client}m')
+	# Need to add a namespace to keep Stanza happy
+	# For XML format, see docstring for incoming_chatstate()
+	m = ElementTree.Element('{jabber:client}m')
+	m.set('to', stanza.to_jid.as_unicode())
 
-		# For XML format, see docstring for incoming_chatstate()
-		m.set('to', stanza.to_jid.as_unicode())
+	if chatstate.tag.endswith('composing'):
+		m.set('tp', 't')
+	else:
+		m.set('tp', 'u')
 
-		if chatstate.tag.endswith('composing'):
-			m.set('tp', 't')
-		else:
-			m.set('tp', 'u')
-
-		return Stanza(m)
+	return Stanza(m)
 
 def outgoing_presence(stanza):
 	# Tlen needs a <show> tag. If not present, use 'available'
