@@ -111,13 +111,44 @@ def outgoing_stanza(stanza):
 		return stanza
 
 def outgoing_message(stanza):
+	"""
+	Adapt an outgoint Message stanza. Either properly encode the
+	message contents, or convert it to a typing notification,
+	if no body is included.
+	"""
+
+	logger.debug('outgoing message, body=%r', stanza.body)
+
 	if stanza.body:
 		body = tlen_encode(stanza.body)
+		# This strips all additional XML tags, like html part etc.
 		stanza = Message(stanza_type = stanza.stanza_type,
 				from_jid = stanza.from_jid, to_jid = stanza.to_jid,
 				subject = stanza.subject, body = body,
 				thread = stanza.thread)
-	return stanza
+	else:
+		xml = stanza.as_xml()
+		for chatstate in xml:
+			if chatstate.tag.startswith(const.CHATSTATES_NS_QNP):
+				break
+		# If no chatstate found, give up and send unmodified stanza
+		else:
+			return stanza
+
+		logger.debug('chatstate=%s', chatstate)
+
+		# Need to add a namespace to keep Stanza happy
+		m = ElementTree.Element('{jabber:client}m')
+
+		# For XML format, see docstring for incoming_chatstate()
+		m.set('to', stanza.to_jid.as_unicode())
+
+		if chatstate.tag.endswith('composing'):
+			m.set('tp', 't')
+		else:
+			m.set('tp', 'u')
+
+		return Stanza(m)
 
 def outgoing_presence(stanza):
 	# Tlen needs a <show> tag. If not present, use 'available'
