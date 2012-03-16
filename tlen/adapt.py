@@ -7,24 +7,61 @@ from pyxmpp2.jid import JID
 
 logger = logging.getLogger('tlen')
 
-def tlen_decode(fun):
+def tlen_decode(text):
+	text = urllib.unquote(text.replace('+', ' '))
+	text = text.decode('iso8859-2')
+	return text
+
+def tlen_decode_element(element):
+	if element.text:
+		element.text = tlen_decode(element.text)
+
+	for child in element:
+		tlen_decode_element(child)
+
+def incoming_element(element):
+	"""
+	Adapt an incoming XML element. Return the element.
+	"""
+
+	if element.tag.endswith('iq'):
+		return incoming_iq_element(element)
+
+	tlen_decode_element(element)
+	return element
+
+def incoming_iq_element(iq):
+	query = iq.find('{jabber:iq:roster}query')
+	if query is not None:
+		return incoming_roster(iq, query)
+
+	return element
+
+def incoming_roster(iq, query):
+	for item in query.findall('{jabber:iq:roster}item'):
+		name = item.get('name')
+		if name:
+			name = item.set('name', tlen_decode(name))
+	return iq
+
+"""
+def tlen_decoded(fun):
 	@functools.wraps(fun)
 	def wrapper(element):
-		for e in element:
-			if e.text:
-				text = urllib.unquote(e.text.replace('+', ' '))
-				e.text = text.decode('iso8859-2')
+		tlen_decode_element(element)
 		return fun(element)
 
 	return wrapper
+"""
 
 def tlen_encode(text):
+	"""
+	Return a new string containing `text` encoded to meet
+	the Tlen client/server requirements.
+	"""
+
 	text = urllib.quote(text.encode('iso8859-2', 'ignore'))
 	return text
-
-@tlen_decode
-def incoming_element(element):
-	return element
 
 def outgoing_stanza(stanza):
 	if isinstance(stanza, Message):
@@ -41,7 +78,6 @@ def outgoing_message(stanza):
 				from_jid = stanza.from_jid, to_jid = stanza.to_jid,
 				subject = stanza.subject, body = body,
 				thread = stanza.thread)
-		logger.debug('====== body: %r', stanza.body)
 	return stanza
 
 def outgoing_presence(stanza):

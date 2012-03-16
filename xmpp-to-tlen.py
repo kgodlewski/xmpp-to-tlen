@@ -7,8 +7,8 @@ import socket, logging, urllib
 level = logging.DEBUG
 level = None
 logging.basicConfig(level=level)
-logging.getLogger('pyxmpp2.IN').setLevel(logging.DEBUG)
-logging.getLogger('pyxmpp2.OUT').setLevel(logging.DEBUG)
+#logging.getLogger('pyxmpp2.IN').setLevel(logging.DEBUG)
+#logging.getLogger('pyxmpp2.OUT').setLevel(logging.DEBUG)
 
 logger = logging.getLogger('tlen')
 logger.setLevel(logging.DEBUG)
@@ -26,6 +26,10 @@ class Listener(object):
 	For each incoming connection launch a greenlet with
 	a separate pyxmpp2 main loop. Attach the loop to proxy.Server
 	and start serving the client.
+
+	The loop we're using is pyxmpp2.mainloop.select.SelectMainLoop.
+	Because it's based on select(), it works nicely with gevent's
+	monkey patching.
 	"""
 
 	def __init__(self):
@@ -55,3 +59,4 @@ class Listener(object):
 if __name__ == '__main__':
 	listener = Listener()
 	listener.serve()
+
