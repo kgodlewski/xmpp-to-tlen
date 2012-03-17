@@ -5,6 +5,23 @@ xmpp-to-tlen -- a XMPP <=> Tlen.pl proxy server
 The goal of this project is to provide basic connectivity to the Tlen.pl
 IM network using an XMPP client of choice.
 
+## How it works
+When you run *xmpp-to-tlen*, a local XMPP server is started on your machine.
+When you connect to the server, using your favourite XMPP client configured
+to use a Tlen.pl account (see *Usage* below), it makes a connection to the
+Tlen.pl network on your behalf, passing messages between your client, and
+the Tlen.pl server, translating them between protocols.
+
+In other words: you can use your Tlen.pl account with any XMPP client
+without installing additional plugins. It's just like a server-side
+transport being run on your machine.
+
+Here's some fancy ASCII-art to picture this:
+
+```
+Your XMPP client <=> xmpp-to-tlen <=> Tlen.pl
+```
+
 ## Requirements
  * Python 2.7+ (might work with older versions)
  * PyXMPP2
@@ -45,7 +62,8 @@ safely ignore this warning. If in doubt, see the _Security_ section below.
  * presence handling
  * typing notifications
  * roster (buddy list) operations
- * handling multiple proxy connections
+ * handling multiple proxy connections -- that means you can use multiple
+   Tlen.pl accounts simultaneously
 
 ## Unsupported features
 A list of features I think might be possible to implement:
