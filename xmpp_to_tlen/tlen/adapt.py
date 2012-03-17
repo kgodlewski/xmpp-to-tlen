@@ -33,6 +33,8 @@ def incoming_element(element):
 		return incoming_message(element)
 	elif element.tag == 'm':
 		return incoming_chatstate(element)
+	elif element.tag == 'presence':
+		return incoming_presence(element)
 	elif element.tag == 'iq':
 		return incoming_iq_element(element)
 
@@ -85,6 +87,30 @@ def incoming_roster(iq, query):
 		if group is not None and group.text:
 			group.text = tlen_decode(group.text)
 	return iq
+
+def incoming_presence(presence):
+	"""
+	Adapt incoming <presence/> element.
+
+	 * tlen_decode() incoming presence <status/> text.
+	 * if <show>available</show> is present, remove it
+	   to meet XMPP requirements.
+	 * remove the <avatar/> tag
+	"""
+
+	status = presence.find('status')
+	if status is not None and status.text:
+		status.text = tlen_decode(status.text)
+
+	show = presence.find('show')
+	if show is not None and show.text == 'available':
+		presence.remove(show)
+
+	avatar = presence.find('avatar')
+	if avatar is not None:
+		presence.remove(avatar)
+	
+	return presence
 
 """
 def tlen_decoded(fun):
