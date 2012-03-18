@@ -39,8 +39,16 @@ class GeventTransport(TlenTransport):
 		self.sock = None
 
 	def connect(self, callback):
-		self.sock = gevent.socket.create_connection(('193.17.41.53', 80))
-		callback()
+		for x in xrange(3):
+			# Try connecting a few times. Helps when the machine wakes
+			# up from sleep/hibernation.
+			try:
+				self.sock = gevent.socket.create_connection(('193.17.41.53', 80))
+				callback()
+				return True
+			except Exception as e:
+				gevent.sleep(x + 1)
+		return False
 
 	def send(self, data):
 		if isinstance(data, Stanza):
@@ -72,7 +80,11 @@ class TlenStream(XMLStreamHandler):
 	def wait_for_auth(self):
 		# FIXME, ugly
 		while not self.authenticated:
+			if self._closed:
+				return False
+
 			gevent.sleep(0.5)
+
 		gevent.spawn(self._pinger)
 
 		return True
@@ -81,7 +93,9 @@ class TlenStream(XMLStreamHandler):
 		gevent.spawn(self.connect)
 
 	def connect(self):
-		self._transport.connect(self._connected)
+		if not self._transport.connect(self._connected):
+			self._closed = True
+			self._transport.close()
 
 	def close(self):
 		self._transport.send('</s>')
