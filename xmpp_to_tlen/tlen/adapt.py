@@ -72,7 +72,11 @@ def incoming_chatstate(stream, element):
 
 	return msg
 
-def incoming_message(message):
+def incoming_message(stream, message):
+	# Ignore popup ad data, can't show it anyway.
+	if message.get('from') == 'b73@tlen.pl':
+		return None
+
 	tlen_decode_element(message)
 	active = ElementTree.Element(const.CHATSTATES_NS_QNP + 'active')
 	message.append(active)
