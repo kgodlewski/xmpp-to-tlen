@@ -108,8 +108,6 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 		password = query.findtext('{jabber:iq:auth}password')
 		resource = query.findtext('{jabber:iq:auth}resource')
 
-		logger.debug('%s %s %s', username, password, resource)
-
 		if not username or not password:
 			# XXX
 			return stanza.make_error_response('bad-request')
@@ -151,6 +149,33 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 			resp.add_payload(query)
 
 		return resp
+
+	@iq_get_stanza_handler(XMLPayload, '{vcard-temp}vCard')
+	def handle_vcard_get(self, iq):
+		logger.debug('vCard: %s', iq)
+
+		resp = iq.make_result_response()
+
+		if not iq.to_jid:
+			return resp
+
+		if iq.to_jid.local and iq.to_jid.domain:
+			avatar = self.tlen.get_avatar(iq.to_jid)
+			vcard = ElementTree.Element('{vcard-temp}vCard')
+			photo = ElementTree.Element('{vcard-temp}PHOTO')
+			typ = ElementTree.Element('{vcard-temp}TYPE')
+			typ.text = avatar.content_type
+			photo.append(typ)
+
+			binval = ElementTree.Element('{vcard-temp}BINVAL')
+			binval.text = avatar.data
+			photo.append(binval)
+
+			vcard.append(photo)
+			resp.add_payload(vcard)
+
+		return resp
+
 
 	@presence_stanza_handler()
 	def handle_presence(self, stanza):

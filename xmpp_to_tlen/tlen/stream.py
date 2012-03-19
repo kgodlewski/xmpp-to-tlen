@@ -7,16 +7,15 @@ from pyxmpp2.stanza import Stanza
 from pyxmpp2.stanzaprocessor import stanza_factory
 from pyxmpp2 import constants
 
-import adapt
-
 logger = logging.getLogger('xmpp_to_tlen.tlen.stream')
 
 class TlenError(Exception):
 	pass
 
+import adapt, avatar
+
 class TlenAuthError(TlenError):
 	pass
-
 
 class TlenTransport(object):
 	def connect(self, callback):
@@ -44,10 +43,11 @@ class GeventTransport(TlenTransport):
 			# up from sleep/hibernation.
 			try:
 				self.sock = gevent.socket.create_connection(('193.17.41.53', 80))
-				callback()
-				return True
 			except Exception as e:
 				gevent.sleep(x + 1)
+
+			callback()
+			return True
 		return False
 
 	def send(self, data):
@@ -69,11 +69,15 @@ class TlenStream(XMLStreamHandler):
 		self.session_id = None
 		self.uplink = None
 
+		# Set by adapt.incoming_avatar
+		self.avatar_token = None
+
 		self.jid = jid
 		self.resource = resource or 'Tlen'
 		self._password = password
 		self._transport = GeventTransport()
 		self._stream_reader = StreamReader(self)
+		self._avatars = avatar.Avatars()
 
 		self._closed = False
 
@@ -190,6 +194,7 @@ class TlenStream(XMLStreamHandler):
 			else:
 				raise TlenAuthError('Server denied authorization')
 		else:
+			element = adapt.incoming_element(self, element)
 			self._uplink_element(element)
 
 	def stream_end(self):
@@ -197,11 +202,11 @@ class TlenStream(XMLStreamHandler):
 		self._transport.close()
 
 	def _uplink_element(self, element):
-		if element.tag in ('avatar', ):
+		# logger.debug('uplink %s', element)
+		# The element processing might be deferred
+		if element is None:
 			return
 
-		# logger.debug('uplink %s', element)
-		element = adapt.incoming_element(element)
 		element = self._add_namespaces(element)
 		self.uplink.send(stanza_factory(element))
 
@@ -216,4 +221,8 @@ class TlenStream(XMLStreamHandler):
 			if sub.tag[0] != '{':
 				sub.tag = constants.STANZA_CLIENT_QNP + sub.tag
 		return element
+
+	def get_avatar(self, jid):
+		jid = jid.as_string()
+		return self._avatars.get(self.avatar_token, jid)
 

@@ -22,7 +22,7 @@ def tlen_decode_element(element):
 	for child in element:
 		tlen_decode_element(child)
 
-def incoming_element(element):
+def incoming_element(stream, element):
 	"""
 	Adapt an incoming XML element. Return the element.
 	"""
@@ -30,18 +30,25 @@ def incoming_element(element):
 	logger.debug('element tag=%s', element.tag)
 
 	if element.tag == 'message':
-		return incoming_message(element)
+		return incoming_message(stream, element)
 	elif element.tag == 'm':
-		return incoming_chatstate(element)
+		return incoming_chatstate(stream, element)
 	elif element.tag == 'presence':
-		return incoming_presence(element)
+		return incoming_presence(stream, element)
 	elif element.tag == 'iq':
-		return incoming_iq_element(element)
+		return incoming_iq_element(stream, element)
+	elif element.tag == 'avatar':
+		return incoming_avatar(stream, element)
 
 	tlen_decode_element(element)
 	return element
 
-def incoming_chatstate(element):
+def incoming_avatar(stream, avatar):
+	stream.avatar_token = avatar.findtext('token')
+	logger.debug('avatar token: %s', stream.avatar_token)
+	return None
+
+def incoming_chatstate(stream, element):
 	"""
 	Transform an <m /> tag to a proper XMPP chat notification.
 
@@ -71,14 +78,14 @@ def incoming_message(message):
 	message.append(active)
 	return message
 
-def incoming_iq_element(iq):
+def incoming_iq_element(stream, iq):
 	query = iq.find('{jabber:iq:roster}query')
 	if query is not None:
-		return incoming_roster(iq, query)
+		return incoming_roster(stream, iq, query)
 
 	return element
 
-def incoming_roster(iq, query):
+def incoming_roster(stream, iq, query):
 	for item in query.findall('{jabber:iq:roster}item'):
 		name = item.get('name')
 		if name:
@@ -88,7 +95,7 @@ def incoming_roster(iq, query):
 			group.text = tlen_decode(group.text)
 	return iq
 
-def incoming_presence(presence):
+def incoming_presence(stream, presence):
 	"""
 	Adapt incoming <presence/> element.
 
@@ -107,8 +114,25 @@ def incoming_presence(presence):
 		presence.remove(show)
 
 	avatar = presence.find('avatar')
+	logger.debug('avatar=%s', avatar)
 	if avatar is not None:
+		md5 = avatar.text
 		presence.remove(avatar)
+
+		jid = presence.get('from')
+		if not jid:
+			logger.warning('invalid presence tag received')
+			return presence
+
+		av = stream._avatars.get(stream.avatar_token, jid, md5)
+
+		x = ElementTree.Element('{vcard-temp:x:update}x') #, xmlns='vcard-temp:x:update')
+		photo = ElementTree.Element('{vcard-temp:x:update}photo')
+		photo.text = av.sha1
+		x.append(photo)
+		presence.append(x)
+
+		logger.debug('x=%s', x)
 	
 	return presence
 
