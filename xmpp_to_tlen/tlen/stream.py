@@ -45,6 +45,7 @@ class GeventTransport(TlenTransport):
 				self.sock = gevent.socket.create_connection(('193.17.41.53', 80))
 			except Exception as e:
 				gevent.sleep(x + 1)
+				continue
 
 			callback()
 			return True
@@ -58,11 +59,14 @@ class GeventTransport(TlenTransport):
 		self.sock.send(data)
 	
 	def recv(self):
-		return self.sock.recv(4096)
-
+		try:
+			return self.sock.recv(4096)
+		except Exception as e:
+			logger.error('recv error: %s', e)
+			return None
 
 class TlenStream(XMLStreamHandler):
-	def __init__(self, jid, password, resource=None):
+	def __init__(self, jid, password, resource, avatars=None):
 		super(TlenStream, self).__init__()
 
 		self.authenticated = False
@@ -73,11 +77,11 @@ class TlenStream(XMLStreamHandler):
 		self.avatar_token = None
 
 		self.jid = jid
-		self.resource = resource or 'Tlen'
+		self.resource = resource
 		self._password = password
 		self._transport = GeventTransport()
 		self._stream_reader = StreamReader(self)
-		self._avatars = avatar.Avatars()
+		self._avatars = avatars
 
 		self._closed = False
 
@@ -179,23 +183,18 @@ class TlenStream(XMLStreamHandler):
 		self._transport.send(xml)
 
 	def stream_element(self, element):
-		# Hackish, add a jabber:client namespace, to keep Stanza() happy
-		# XXX: Dunno if I really need Stanza here
-		#element = self._add_namespaces(element)
-		#stanza = Stanza(element)
-		#logger.debug('element: %s', stanza.serialize())
-
-		if not self.authenticated:
+		if self.authenticated:
+			element = adapt.incoming_element(self, element)
+			self._uplink_element(element)
+		else:
 			if element.tag != 'iq':
 				raise TlenAuthError('Unexpected server response: ' + stanza.serialize())
 			typ = element.get('type')
 			if typ == 'result':
 				self.authenticated = True
 			else:
-				raise TlenAuthError('Server denied authorization')
-		else:
-			element = adapt.incoming_element(self, element)
-			self._uplink_element(element)
+				logger.warning('Tlen server denied authentication (account: %s)', self.jid.as_string())
+				self.close()
 
 	def stream_end(self):
 		self._closed = True
@@ -222,7 +221,19 @@ class TlenStream(XMLStreamHandler):
 				sub.tag = constants.STANZA_CLIENT_QNP + sub.tag
 		return element
 
-	def get_avatar(self, jid):
+	def get_avatar(self, jid, callback=None, *args):
 		jid = jid.as_string()
-		return self._avatars.get(self.avatar_token, jid)
+		if not callback:
+			return self._avatars.get(self.avatar_token, jid)
+		else:
+			gevent.spawn(self._get_avatar_async, jid, callback, *args)
 
+	def _get_avatar_async(self, jid, callback, *args):
+		try:
+			logger.debug('async avatar get, jid=%s', jid)
+			avatar = self._avatars.get(self.avatar_token, jid)
+		except TlenError as e:
+			logger.error('Error while downloading avatar: %s', e)
+			avatar = None
+
+		callback(avatar, *args)

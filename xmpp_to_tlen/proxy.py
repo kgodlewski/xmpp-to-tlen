@@ -27,6 +27,7 @@ from tlen.stream import TlenStream
 logger = logging.getLogger('xmpp_to_tlen.proxy')
 
 from const import DISCO_INFO_NS_QNP, CHATSTATES_NS
+import jobs
 
 class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 	"""
@@ -37,10 +38,12 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 	adapted to achieve maximum satisfaction on both sides ;)
 	"""
 
-	def __init__(self, transport):
+	def __init__(self, transport, avatars):
 		StanzaProcessor.__init__(self)
 
 		logger.debug('-- New connection')
+
+		self.avatars = avatars
 
 		self.settings = XMPPSettings()
 
@@ -112,7 +115,7 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 			# XXX
 			return stanza.make_error_response('bad-request')
 
-		self.tlen = TlenStream(JID(username, 'tlen.pl'), password, resource)
+		self.tlen = TlenStream(JID(username, 'tlen.pl'), password, resource, self.avatars)
 		self.tlen.uplink = self.stream
 		self.tlen.start()
 
@@ -154,28 +157,8 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 	def handle_vcard_get(self, iq):
 		logger.debug('vCard: %s', iq)
 
-		resp = iq.make_result_response()
-
-		if not iq.to_jid:
-			return resp
-
-		if iq.to_jid.local and iq.to_jid.domain:
-			avatar = self.tlen.get_avatar(iq.to_jid)
-			vcard = ElementTree.Element('{vcard-temp}vCard')
-			photo = ElementTree.Element('{vcard-temp}PHOTO')
-			typ = ElementTree.Element('{vcard-temp}TYPE')
-			typ.text = avatar.content_type
-			photo.append(typ)
-
-			binval = ElementTree.Element('{vcard-temp}BINVAL')
-			binval.text = avatar.data
-			photo.append(binval)
-
-			vcard.append(photo)
-			resp.add_payload(vcard)
-
-		return resp
-
+		job = jobs.VCard(self)
+		return job.perform(iq)
 
 	@presence_stanza_handler()
 	def handle_presence(self, stanza):

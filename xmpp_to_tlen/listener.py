@@ -6,6 +6,7 @@ from pyxmpp2.transport import TCPTransport
 from pyxmpp2.mainloop.select import SelectMainLoop
 
 import proxy
+from tlen import avatar
 
 logger = logging.getLogger('xmpp_to_tlen.listener')
 
@@ -24,13 +25,14 @@ class Listener(object):
 		super(Listener, self).__init__()
 
 		self._server = StreamServer(('127.0.0.1', 5222), self._handle_connection)
+		self._avatars = avatar.Avatars()
 
 	def serve(self):
 		self._server.serve_forever()
 
 	def _handle_connection(self, sock, addr):
 		transport = TCPTransport(sock = sock)
-		serv = proxy.Server(transport)
+		serv = proxy.Server(transport, self._avatars)
 		loop = SelectMainLoop(XMPPSettings({'poll_interval' : 10000}), serv.handlers + [transport])
 
 		gevent.spawn(self._supervise_loop, serv, loop)

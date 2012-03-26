@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-import gevent.monkey, logging
-from xmpp_to_tlen.listener import Listener
-
 if __name__ == '__main__':
+	import gevent.monkey, logging
+	from xmpp_to_tlen.listener import Listener
+
 	gevent.monkey.patch_all()
 
-	# level = logging.DEBUG
-	level = None
+	level = logging.DEBUG
+	# level = None
 	logging.basicConfig(level=level)
 	# logging.getLogger('pyxmpp2.IN').setLevel(logging.DEBUG)
 	# logging.getLogger('pyxmpp2.OUT').setLevel(logging.DEBUG)

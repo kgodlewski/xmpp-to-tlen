@@ -74,7 +74,7 @@ def incoming_chatstate(stream, element):
 
 def incoming_message(stream, message):
 	# Ignore popup ad data, can't show it anyway.
-	if message.get('from') == 'b73@tlen.pl':
+	if message.get('from') in ('b73@tlen.pl', ):
 		return None
 
 	tlen_decode_element(message)
@@ -130,7 +130,7 @@ def incoming_presence(stream, presence):
 
 		av = stream._avatars.get(stream.avatar_token, jid, md5)
 
-		x = ElementTree.Element('{vcard-temp:x:update}x') #, xmlns='vcard-temp:x:update')
+		x = ElementTree.Element('{vcard-temp:x:update}x')
 		photo = ElementTree.Element('{vcard-temp:x:update}photo')
 		photo.text = av.sha1
 		x.append(photo)
@@ -216,5 +216,8 @@ def outgoing_presence(stanza):
 		stanza.show = 'available'
 	if stanza.status:
 		stanza.status = tlen_encode(stanza.status)
+
+	# Strip any all additional tags
+	stanza = Presence(show=stanza.show, status=stanza.status)
 	return stanza
 
