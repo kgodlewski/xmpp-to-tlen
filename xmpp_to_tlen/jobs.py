@@ -15,29 +15,28 @@ class Job(object):
 	def perform(self, *args, **kwargs):
 		raise NotImplementedError()
 
-class VCard(Job):
+class VCardGet(Job):
 	def perform(self, *args, **kwargs):
 		# XXX: This will include tuba exchange too
 		iq, = args
 
-		resp = iq.make_result_response()
+		# If no jid was specified, the client requests its own VCard
+		jid = iq.to_jid or self.tlen.jid
 
-		if not iq.to_jid:
-			# XXX: My own v-card
-			return resp
+		logger.debug('to_jid: local: %s, domain: %s, full: %s', jid.local,
+			jid.domain, jid.as_string())
 
-		logger.debug('to_jid: local: %s, domain: %s, full: %s', iq.to_jid.local,
-			iq.to_jid.domain, iq.to_jid.as_string())
+		response = iq.make_result_response()
 
-		if iq.to_jid.local and iq.to_jid.domain:
-			gevent.spawn(self._get_avatar, iq.to_jid.as_string(), resp)
+		if jid.local and jid.domain:
+			gevent.spawn(self._get_avatar, jid.as_string(), response)
 			return None
 
-		return resp
+		return response
 
 	def _get_avatar(self, sjid, response):
 		try:
-			avdata = self.xmpp.avatars.get(self.xmpp.avatar_token, sjid)
+			avdata = self.xmpp.avatars.get(self.tlen.avatar_token, sjid)
 		except Exception as e:
 			logger.error('Error while fetching avatar:', exc_info=sys.exc_info())
 			return
@@ -45,15 +44,15 @@ class VCard(Job):
 		vcard = ElementTree.Element('{vcard-temp}vCard')
 		photo = ElementTree.Element('{vcard-temp}PHOTO')
 		typ = ElementTree.Element('{vcard-temp}TYPE')
-		typ.text = avatar.content_type
+		typ.text = avdata.content_type
 		photo.append(typ)
 
 		binval = ElementTree.Element('{vcard-temp}BINVAL')
-		binval.text = avatar.data
+		binval.text = avdata.data
 		photo.append(binval)
 
 		vcard.append(photo)
-		resp.add_payload(vcard)
+		response.add_payload(vcard)
 
-		self.xmpp.stream.send(resp)
+		self.xmpp.stream.send(response)
 

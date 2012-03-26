@@ -21,10 +21,10 @@ class Listener(object):
 	monkey patching.
 	"""
 
-	def __init__(self):
+	def __init__(self, port=5222):
 		super(Listener, self).__init__()
 
-		self._server = StreamServer(('127.0.0.1', 5222), self._handle_connection)
+		self._server = StreamServer(('127.0.0.1', port), self._handle_connection)
 		self._avatars = avatar.Avatars()
 
 	def serve(self):

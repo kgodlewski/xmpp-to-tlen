@@ -157,7 +157,7 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 	def handle_vcard_get(self, iq):
 		logger.debug('vCard: %s', iq)
 
-		job = jobs.VCard(self)
+		job = jobs.VCardGet(self)
 		return job.perform(iq)
 
 	@presence_stanza_handler()
