@@ -79,7 +79,7 @@ class TlenStream(XMLStreamHandler):
 		self.avatar_token = None
 
 		self.jid = jid
-		self.resource = resource
+		self.resource = adapt.tlen_encode(resource)
 		self._password = password
 		self._transport = GeventTransport()
 		self._stream_reader = StreamReader(self)
