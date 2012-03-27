@@ -1,5 +1,5 @@
-import logging, sha, urllib
-import gevent, gevent.socket
+import logging, sha, urllib, sys
+import gevent, gevent.socket, gevent.event
 
 from pyxmpp2.xmppparser import StreamReader, XMLStreamHandler
 from pyxmpp2.jid import JID
@@ -71,7 +71,6 @@ class TlenStream(XMLStreamHandler):
 	def __init__(self, jid, password, resource, avatars=None):
 		super(TlenStream, self).__init__()
 
-		self.authenticated = False
 		self.session_id = None
 		self.uplink = None
 
@@ -86,20 +85,31 @@ class TlenStream(XMLStreamHandler):
 		self._avatars = avatars
 
 		self._closed = False
+		self._authenticated = gevent.event.Event()
 
 		self.blocklist = BlockList(self.jid.as_string())
 
 	def wait_for_auth(self):
-		# FIXME, ugly
-		while not self.authenticated:
+		"""
+		Wait until self._authenticated event is signalled, or
+		a timeout occurs.
+
+		Return True if auth succeeded, False otherwise.
+		"""
+
+		try:
+			self._authenticated.wait(30)
 			if self._closed:
 				return False
+			else:
+				gevent.spawn(self._pinger)
+				return True
+		except gevent.Timeout:
+			return False
 
-			gevent.sleep(0.5)
-
-		gevent.spawn(self._pinger)
-
-		return True
+	@property
+	def authenticated(self):
+		return self._authenticated.is_set()
 
 	def start(self):
 		gevent.spawn(self.connect)
@@ -216,7 +226,7 @@ class TlenStream(XMLStreamHandler):
 				raise TlenAuthError('Unexpected server response: ' + stanza.serialize())
 			typ = element.get('type')
 			if typ == 'result':
-				self.authenticated = True
+				self._authenticated.set()
 			else:
 				logger.warning('Tlen server denied authentication (account: %s)', self.jid.as_string())
 				self.close()
