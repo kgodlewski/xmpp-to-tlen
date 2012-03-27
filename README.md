@@ -23,8 +23,8 @@ Your XMPP client <=> xmpp-to-tlen <=> Tlen.pl
 ```
 
 ## Requirements
- * Python 2.7+ (might work with older versions)
- * PyXMPP2
+ * Python 2.7+
+ * PyXMPP2 (this is installed automatically by `pip`)
 
 ## Installation
 Open your trusty terminal and run:
