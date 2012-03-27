@@ -171,39 +171,6 @@ class TlenStream(XMLStreamHandler):
 		sha1 = sha.new(self.session_id + code)
 		return sha1.hexdigest()
 
-	#
-	# XMLStreamHandler API
-	#
-	def stream_start(self, element):
-		self.session_id = element.get('i')
-		
-		# Authorize with the Tlen server; this is tlen-specific,
-		# and can't be handled the usual XMPP way.
-		xml = '<iq type="set" id="%s"><query xmlns="jabber:iq:auth">'
-		xml += '<username>%s</username><digest>%s</digest><resource>%s</resource>'
-		xml += '<host>tlen.pl</host></query></iq>'
-
-		xml = xml % (self.session_id, self.jid.local, self._auth_digest(), self.resource)
-		self._transport.send(xml)
-
-	def stream_element(self, element):
-		if self.authenticated:
-			element = adapt.incoming_element(self, element)
-			self._uplink_element(element)
-		else:
-			if element.tag != 'iq':
-				raise TlenAuthError('Unexpected server response: ' + stanza.serialize())
-			typ = element.get('type')
-			if typ == 'result':
-				self.authenticated = True
-			else:
-				logger.warning('Tlen server denied authentication (account: %s)', self.jid.as_string())
-				self.close()
-
-	def stream_end(self):
-		self._closed = True
-		self._transport.close()
-
 	def _uplink_element(self, element):
 		# logger.debug('uplink %s', element)
 		# The element processing might be deferred
@@ -225,19 +192,36 @@ class TlenStream(XMLStreamHandler):
 				sub.tag = constants.STANZA_CLIENT_QNP + sub.tag
 		return element
 
-	def get_avatar(self, jid, callback=None, *args):
-		jid = jid.as_string()
-		if not callback:
-			return self._avatars.get(self.avatar_token, jid)
+	#
+	# XMLStreamHandler API
+	#
+	def stream_start(self, element):
+		self.session_id = element.get('i')
+		
+		# Authorize with the Tlen server; this is tlen-specific,
+		# and can't be handled the usual XMPP way.
+		xml = '<iq type="set" id="%s"><query xmlns="jabber:iq:auth">'
+		xml += '<username>%s</username><digest>%s</digest><resource>%s</resource>'
+		xml += '<host>tlen.pl</host></query></iq>'
+
+		xml = xml % (self.session_id, self.jid.local, self._auth_digest(), self.resource)
+		self.send(xml)
+
+	def stream_element(self, element):
+		if self.authenticated:
+			element = adapt.incoming_element(self, element)
+			self._uplink_element(element)
 		else:
-			gevent.spawn(self._get_avatar_async, jid, callback, *args)
+			if element.tag != 'iq':
+				raise TlenAuthError('Unexpected server response: ' + stanza.serialize())
+			typ = element.get('type')
+			if typ == 'result':
+				self.authenticated = True
+			else:
+				logger.warning('Tlen server denied authentication (account: %s)', self.jid.as_string())
+				self.close()
 
-	def _get_avatar_async(self, jid, callback, *args):
-		try:
-			logger.debug('async avatar get, jid=%s', jid)
-			avatar = self._avatars.get(self.avatar_token, jid)
-		except TlenError as e:
-			logger.error('Error while downloading avatar: %s', e)
-			avatar = None
+	def stream_end(self):
+		self._closed = True
+		self._transport.close()
 
-		callback(avatar, *args)

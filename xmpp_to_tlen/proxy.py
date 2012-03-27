@@ -72,7 +72,7 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 			self.tlen.close()
 		return QUIT
 
-	# Stanza handlers. Except for authorization stuff, they
+	# Stanza handlers. Except for authentication stuff, they
 	# push everything to the TlenClient. Anything that needs
 	# fixing up before being sent to the server is performed
 	# in TlenClient.send()

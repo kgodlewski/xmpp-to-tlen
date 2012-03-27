@@ -141,16 +141,6 @@ def incoming_presence(stream, presence):
 	
 	return presence
 
-"""
-def tlen_decoded(fun):
-	@functools.wraps(fun)
-	def wrapper(element):
-		tlen_decode_element(element)
-		return fun(element)
-
-	return wrapper
-"""
-
 def tlen_encode(text):
 	"""
 	Return a new string containing `text` encoded to meet
