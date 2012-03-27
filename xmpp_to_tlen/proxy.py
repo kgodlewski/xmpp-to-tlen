@@ -26,7 +26,7 @@ from tlen.stream import TlenStream
 
 logger = logging.getLogger('xmpp_to_tlen.proxy')
 
-from const import DISCO_INFO_NS_QNP, CHATSTATES_NS
+from const import DISCO_INFO_NS_QNP, CHATSTATES_NS, DISCO_ITEMS_NS_QNP
 import jobs
 
 class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
@@ -134,7 +134,7 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 		self.tlen.send(stanza)
 
 	@iq_get_stanza_handler(XMLPayload, DISCO_INFO_NS_QNP + 'query')
-	def handle_disco_get(self, stanza):
+	def handle_disco_info_get(self, stanza):
 		"""
 		Handle feature discovery on behalf of a @tlen.pl user.
 		"""
@@ -152,6 +152,14 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 			resp.add_payload(query)
 
 		return resp
+
+	@iq_get_stanza_handler(XMLPayload, DISCO_ITEMS_NS_QNP + 'query')
+	def handle_disco_items_get(self, stanza):
+		response = stanza.make_result_response()
+		query = ElementTree.Element(DISCO_ITEMS_NS_QNP + 'query')
+		response.add_payload(query)
+
+		return response
 
 	@iq_get_stanza_handler(XMLPayload, '{vcard-temp}vCard')
 	def handle_vcard_get(self, iq):
