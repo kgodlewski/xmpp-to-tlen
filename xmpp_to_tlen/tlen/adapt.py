@@ -74,7 +74,8 @@ def incoming_chatstate(stream, element):
 
 def incoming_message(stream, message):
 	# Ignore popup ad data, can't show it anyway.
-	if message.get('from') in ('b73@tlen.pl', ):
+	frm = message.get('from')
+	if stream.blocklist.is_blocked(frm):
 		return None
 
 	tlen_decode_element(message)

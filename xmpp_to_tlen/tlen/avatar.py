@@ -89,8 +89,8 @@ class _LocalCache(object):
 		try:
 			os.makedirs(self._base_dir)
 		except OSError as e:
-			if e.errno == errno.EEXIST:
-				pass
+			if e.errno != errno.EEXIST:
+				raise
 
 		self._path = os.path.join(self._base_dir, 'avatars')
 

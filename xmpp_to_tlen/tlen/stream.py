@@ -7,6 +7,8 @@ from pyxmpp2.stanza import Stanza
 from pyxmpp2.stanzaprocessor import stanza_factory
 from pyxmpp2 import constants
 
+from xmpp_to_tlen.blocklist import BlockList
+
 logger = logging.getLogger('xmpp_to_tlen.tlen.stream')
 
 class TlenError(Exception):
@@ -84,6 +86,8 @@ class TlenStream(XMLStreamHandler):
 		self._avatars = avatars
 
 		self._closed = False
+
+		self.blocklist = BlockList(self.jid.as_string())
 
 	def wait_for_auth(self):
 		# FIXME, ugly
