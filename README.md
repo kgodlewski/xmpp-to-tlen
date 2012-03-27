@@ -29,9 +29,16 @@ Your XMPP client <=> xmpp-to-tlen <=> Tlen.pl
 ## Installation
 Open your trusty terminal and run:
 
-```
-$ pip install https://github.com/kgodlewski/xmpp-to-tlen/tarball/master
-```
+ * stable version (recommended):
+
+   ```
+   pip install https://github.com/downloads/kgodlewski/xmpp-to-tlen/xmpp-to-tlen-0.1.tar.gz
+   ```
+ * latest development version:
+
+   ```
+   pip install https://github.com/kgodlewski/xmpp-to-tlen/tarball/master
+   ```
 
 ## Usage
 Start the server:
