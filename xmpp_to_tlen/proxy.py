@@ -101,10 +101,7 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 		of the user.
 		"""
 
-		logger.debug('auth set %s', stanza.serialize())
-
 		query = stanza.get_payload(None, 'query').as_xml()
-		logger.debug('query=%s, %s', query, list(query))
 
 		# XXX: Assuming the client will use legacy auth
 		username = query.findtext('{jabber:iq:auth}username')
