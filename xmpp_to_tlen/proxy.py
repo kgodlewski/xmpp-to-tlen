@@ -144,13 +144,14 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 		resp = stanza.make_result_response()
 
 		# Target is client entity
-		if stanza.to_jid.domain:
+		query = ElementTree.Element(DISCO_INFO_NS_QNP + 'query')
+		if stanza.to_jid.local:
 			logger.debug('disco to client')
-			query = ElementTree.Element(DISCO_INFO_NS_QNP + 'query')
 			query.append(ElementTree.Element(DISCO_INFO_NS_QNP + 'feature', var=CHATSTATES_NS))
+		else:
+			query.append(ElementTree.Element(DISCO_INFO_NS_QNP + 'feature', var='urn:xmpp:blocking'))
 
-			resp.add_payload(query)
-
+		resp.add_payload(query)
 		return resp
 
 	@iq_get_stanza_handler(XMLPayload, DISCO_ITEMS_NS_QNP + 'query')
