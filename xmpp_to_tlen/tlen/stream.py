@@ -123,6 +123,8 @@ class TlenStream(XMLStreamHandler):
 		self._transport.send('</s>')
 		self._closed = True
 		self._transport.close()
+		self.uplink.close()
+		self.uplink = None
 
 	def send(self, data):
 		if isinstance(data, Stanza):
@@ -153,8 +155,18 @@ class TlenStream(XMLStreamHandler):
 			logger.debug('data=%s', data)
 			if not data:
 				break
-			self._stream_reader.feed(data)
+			try:
+				self._stream_reader.feed(data)
+			except Exception as e:
+				logger.error('Tlen error: %s', exc_info=sys.exc_info())
+				break
 		logger.debug('tlen loop done')
+
+		if self.uplink:
+			# Close the other side (XMPP client)
+			self.uplink.close()
+			# Lose the ref
+			self.uplink = None
 
 	def _connected(self):
 		logger.debug('connected')

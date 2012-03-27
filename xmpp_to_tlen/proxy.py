@@ -58,8 +58,6 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 		self.uplink = self.stream
 		self.stream.set_authenticated(JID(domain='tlen.pl'))
 
-		# self.clear_response_handlers()
-		# self.setup_stanza_handlers(self.handlers, "pre-auth")
 
 	@event_handler(AuthenticatedEvent)
 	def authenticated(self, event):
@@ -70,6 +68,7 @@ class Server(StanzaProcessor, EventHandler, TimeoutHandler, XMPPFeatureHandler):
 		logger.debug('Client disconnected')
 		if self.tlen:
 			self.tlen.close()
+			self.tlen = None
 		return QUIT
 
 	# Stanza handlers. Except for authentication stuff, they
