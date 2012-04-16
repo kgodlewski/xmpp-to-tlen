@@ -44,7 +44,7 @@ class GeventTransport(TlenTransport):
 			# Try connecting a few times. Helps when the machine wakes
 			# up from sleep/hibernation.
 			try:
-				self.sock = gevent.socket.create_connection(('193.17.41.53', 80))
+				self.sock = gevent.socket.create_connection(('193.17.41.53', 443))
 			except Exception as e:
 				gevent.sleep(x + 1)
 				continue
