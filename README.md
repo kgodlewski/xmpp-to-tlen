@@ -27,17 +27,21 @@ Your XMPP client <=> xmpp-to-tlen <=> Tlen.pl
  * PyXMPP2 (this is installed automatically by `pip`)
 
 ## Installation
-Open your trusty terminal and run:
+Some external modules are required, gevent being the one that causes most trouble.
+You need XCode with Command Line Tools installed (see Preferences -> Downloads in XCode). XCode can be downloaded for free using the App Store.
+You also need libevent. The easiest way to install it is using the excellent [Homebrew](https://github.com/mxcl/homebrew).
+
+After installing all the above stuff, all that's left to do is running one of these command in your terminal:
 
  * stable version (recommended):
 
    ```
-   pip install https://github.com/downloads/kgodlewski/xmpp-to-tlen/xmpp-to-tlen-0.1.tar.gz
+   sudo pip install https://github.com/downloads/kgodlewski/xmpp-to-tlen/xmpp-to-tlen-0.1.tar.gz
    ```
  * latest development version:
 
    ```
-   pip install https://github.com/kgodlewski/xmpp-to-tlen/tarball/master
+   sudo pip install -U https://github.com/kgodlewski/xmpp-to-tlen/tarball/master
    ```
 
 ## Usage
@@ -55,9 +59,9 @@ Configure your client:
    using these values:
    * "server host": *127.0.0.1*
    * "server port": *5222*
-   * disable TLS
+   * disable TLS/SSL
    * if there is a setting stating "Allow plain authentication", or similar,
-     be sure to enable it
+     be sure to enable it. Disable checkboxes that say something along "warn me if the password is not being sent in a secure way".
  * enjoy!
  
 Your client might warn you about sending credentials in plain text. You can
@@ -71,12 +75,12 @@ safely ignore this warning. If in doubt, see the _Security_ section below.
  * roster (buddy list) operations
  * handling multiple proxy connections -- that means you can use multiple
    Tlen.pl accounts simultaneously
+ * buddy icons
 
 ## Unsupported features
 A list of features I think might be possible to implement:
 
  * "invisible" presence
- * buddy icons
  * user profile info
 
 The following stuff is mostly Tlen.pl specific. Making it work with any
