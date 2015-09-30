@@ -115,7 +115,7 @@ My XMPP knowledge is pretty basic (if there is a level below basic, I'm there!).
 I can't guarantee this will work for all XMPP clients out there. 
 
 In fact, I guarantee nothing. *xmpp-to-tlen* does its best to provide a smooth
-experience, but if there are messages lost, contacts accidentaly removed or
+experience, but if there are messages lost, contacts accidentally removed or
 your computer suddenly explodes -- don't blame me.
 
 Having that out of the way, these clients are known to work:
